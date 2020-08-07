@@ -20,7 +20,7 @@ class PoseEstimationOperator(bpy.types.Operator):
     bl_label = "Pose Estimation Operator"  
     _timer = None
     _cap  = None 
-    _id = "/Users/leohung/Downloads/sample.mp4"
+    _id = 0 # "/Users/leohung/Downloads/testing.mp4"
     width = 800
     height = 600
     stop :bpy.props.BoolProperty()
@@ -57,6 +57,7 @@ class PoseEstimationOperator(bpy.types.Operator):
     original_rightKnee = None
     original_leftAnkle = None
     original_rightAnkle = None
+    keyframe_insert_enable = False
 
     def modal(self, context, event):
         if (event.type in {'RIGHTMOUSE', 'ESC'}) or self.stop == True:
@@ -115,8 +116,10 @@ class PoseEstimationOperator(bpy.types.Operator):
                 # Move nose
                 nose = keypoint_coords[0][0]
                 nose = [(self.original_nose[0] - nose[0])*self.proportion, (self.original_nose[1] - nose[1])*self.proportion]
-                bones["head"].location[2] = nose[0]
-                bones["head"].location[0] = nose[1]
+                bones["head"].rotation_mode = 'XYZ'
+                bones["head"].rotation_euler[0] = nose[0] * -1
+                bones["head"].rotation_euler[1] = nose[1]
+                
                 # Move eyes
                 leftEye = keypoint_coords[0][1]
                 leftEye = [(self.original_leftEye[0] - leftEye[0])*self.proportion, (self.original_leftEye[1] - leftEye[1])*self.proportion]
@@ -151,12 +154,12 @@ class PoseEstimationOperator(bpy.types.Operator):
                 leftWrist = keypoint_coords[0][9]
                 leftWrist = [(self.original_leftWrist[0] - leftWrist[0])*self.proportion, (self.original_leftWrist[1] - leftWrist[1])*self.proportion]
                 bones["hand_ik.L"].location[2] = leftWrist[0]
-                bones["hand_ik.L"].location[0] = leftWrist[1]
+                bones["hand_ik.L"].location[1] = leftWrist[1] * -1
                 
                 rightWrist = keypoint_coords[0][10]
                 rightWrist = [(self.original_rightWrist[0] - rightWrist[0])*self.proportion, (self.original_rightWrist[1] - rightWrist[1])*self.proportion]
                 bones["hand_ik.R"].location[2] = rightWrist[0]
-                bones["hand_ik.R"].location[0] = rightWrist[1]
+                bones["hand_ik.R"].location[1] = rightWrist[1]
                 
                 # Move hips
                 leftHip = keypoint_coords[0][11]
@@ -184,6 +187,15 @@ class PoseEstimationOperator(bpy.types.Operator):
                 rightAnkle = [(self.original_rightAnkle[0] - rightAnkle[0])*self.proportion, (self.original_rightAnkle[1] - rightAnkle[1])*self.proportion]
                 bones["foot_ik.R"].location[2] = rightAnkle[0]
                 bones["foot_ik.R"].location[0] = rightAnkle[1]
+
+                if self.keyframe_insert_enable == True:
+                    bones["head"].keyframe_insert(data_path="rotation_euler", index=-1)
+                    bones["chest"].keyframe_insert(data_path="location", index=-1)
+                    bones["hand_ik.L"].keyframe_insert(data_path="location", index=-1)
+                    bones["hand_ik.R"].keyframe_insert(data_path="location", index=-1)
+                    bones["torso"].keyframe_insert(data_path="location", index=-1)
+                    bones["foot_ik.L"].keyframe_insert(data_path="location", index=-1)
+                    bones["foot_ik.R"].keyframe_insert(data_path="location", index=-1)
 
             cv2.imshow('posenet', overlay_image)
             cv2.waitKey(1)
