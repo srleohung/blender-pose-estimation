@@ -20,7 +20,8 @@ class PoseEstimationOperator(bpy.types.Operator):
     bl_label = "Pose Estimation Operator"  
     _timer = None
     _cap  = None 
-    _id = 0 # "/Users/leohung/Downloads/testing.mp4"
+    _id = "/Users/leohung/Downloads/testing.mp4"
+    # _id = 0
     width = 800
     height = 600
     stop :bpy.props.BoolProperty()
@@ -37,7 +38,7 @@ class PoseEstimationOperator(bpy.types.Operator):
 
     # initialization calibrator
     proportion = None
-    object_shoulder_width = 1.9
+    object_shoulder_width = 0.95 # 1.9
     calibration_times = 10
     calibration_count = 0
     original_nose = None
@@ -110,15 +111,21 @@ class PoseEstimationOperator(bpy.types.Operator):
                 self.original_rightKnee = keypoint_coords[0][14]
                 self.original_leftAnkle = keypoint_coords[0][15]
                 self.original_rightAnkle = keypoint_coords[0][16]
+                if self.original_leftShoulder[0] == 0 or self.original_leftShoulder[1] == 0 or self.original_rightShoulder[0] == 0 or self.original_rightShoulder[1] == 0:
+                    return {'PASS_THROUGH'}
                 self.proportion = self.object_shoulder_width / math.sqrt(math.pow(self.original_leftShoulder[0] - self.original_rightShoulder[0], 2) + math.pow(self.original_leftShoulder[1] - self.original_rightShoulder[1], 2))
                 self.calibration_count += 1
             else:
+                x, y = self.calibration_location(keypoint_coords)
+                # bones["root"].location[2] = y*self.proportion
+                # bones["root"].location[0] = x*self.proportion
+
                 # Move nose
                 nose = keypoint_coords[0][0]
                 nose = [(self.original_nose[0] - nose[0])*self.proportion, (self.original_nose[1] - nose[1])*self.proportion]
                 bones["head"].rotation_mode = 'XYZ'
-                bones["head"].rotation_euler[0] = nose[0] * -1
-                bones["head"].rotation_euler[1] = nose[1]
+                bones["head"].rotation_euler[0] = self.calibration_value(nose[0] * -1, 1, -1)
+                bones["head"].rotation_euler[1] = self.calibration_value(nose[1], 1, -1)
                 
                 # Move eyes
                 leftEye = keypoint_coords[0][1]
@@ -140,16 +147,20 @@ class PoseEstimationOperator(bpy.types.Operator):
 
                 rightShoulder = keypoint_coords[0][6]
                 rightShoulder = [(self.original_rightShoulder[0] - rightShoulder[0])*self.proportion, (self.original_rightShoulder[1] - rightShoulder[1])*self.proportion]
-                bones["chest"].location[2] = (leftShoulder[0] + rightShoulder[0]) / 2
-                bones["chest"].location[0] = (leftShoulder[1] + rightShoulder[1]) / 2
+                # bones["chest"].location[2] = (leftShoulder[0] + rightShoulder[0]) / 2
+                # bones["chest"].location[0] = (leftShoulder[1] + rightShoulder[1]) / 2
 
                 # Move elbows
                 leftElbow = keypoint_coords[0][7]
                 leftElbow = [(self.original_leftElbow[0] - leftElbow[0])*self.proportion, (self.original_leftElbow[1] - leftElbow[1])*self.proportion]
-                
+                # bones["forearm_tweak.L"].location[2] = self.calibration_value(leftElbow[0], 1, -1) 
+                # bones["forearm_tweak.L"].location[1] = self.calibration_value(leftElbow[1] * -1, 1, -1) 
+
                 rightElbow = keypoint_coords[0][8]
                 rightElbow = [(self.original_rightElbow[0] - rightElbow[0])*self.proportion, (self.original_rightElbow[1] - rightElbow[1])*self.proportion]
-                
+                # bones["forearm_tweak.R"].location[2] = self.calibration_value(rightElbow[0], 1, -1) 
+                # bones["forearm_tweak.R"].location[1] = self.calibration_value(rightElbow[1], 1, -1) 
+
                 # Move wrists
                 leftWrist = keypoint_coords[0][9]
                 leftWrist = [(self.original_leftWrist[0] - leftWrist[0])*self.proportion, (self.original_leftWrist[1] - leftWrist[1])*self.proportion]
@@ -173,10 +184,14 @@ class PoseEstimationOperator(bpy.types.Operator):
                 # Move knees
                 leftKnee = keypoint_coords[0][13]
                 leftKnee = [(self.original_leftKnee[0] - leftKnee[0])*self.proportion, (self.original_leftKnee[1] - leftKnee[1])*self.proportion]
-                
+                # bones["shin_tweak.L"].location[2] = leftKnee[0]
+                # bones["shin_tweak.L"].location[1] = leftKnee[1] * -1
+
                 rightKnee = keypoint_coords[0][14]
                 rightKnee = [(self.original_rightKnee[0] - rightKnee[0])*self.proportion, (self.original_rightKnee[1] - rightKnee[1])*self.proportion]
-                
+                # bones["shin_tweak.R"].location[2] = rightKnee[0]
+                # bones["shin_tweak.R"].location[1] = rightKnee[1]
+
                 # Move ankles
                 leftAnkle = keypoint_coords[0][15]
                 leftAnkle = [(self.original_leftAnkle[0] - leftAnkle[0])*self.proportion, (self.original_leftAnkle[1] - leftAnkle[1])*self.proportion]
@@ -189,19 +204,57 @@ class PoseEstimationOperator(bpy.types.Operator):
                 bones["foot_ik.R"].location[0] = rightAnkle[1]
 
                 if self.keyframe_insert_enable == True:
+                    # rotation_euler
                     bones["head"].keyframe_insert(data_path="rotation_euler", index=-1)
+                    # location
+                    bones["root"].keyframe_insert(data_path="location", index=-1)
                     bones["chest"].keyframe_insert(data_path="location", index=-1)
+                    bones["forearm_tweak.L"].keyframe_insert(data_path="location", index=-1)
+                    bones["forearm_tweak.R"].keyframe_insert(data_path="location", index=-1)
                     bones["hand_ik.L"].keyframe_insert(data_path="location", index=-1)
                     bones["hand_ik.R"].keyframe_insert(data_path="location", index=-1)
                     bones["torso"].keyframe_insert(data_path="location", index=-1)
+                    bones["shin_tweak.L"].keyframe_insert(data_path="location", index=-1)
+                    bones["shin_tweak.R"].keyframe_insert(data_path="location", index=-1)
                     bones["foot_ik.L"].keyframe_insert(data_path="location", index=-1)
                     bones["foot_ik.R"].keyframe_insert(data_path="location", index=-1)
 
             cv2.imshow('posenet', overlay_image)
             cv2.waitKey(1)
 
-        return {'PASS_THROUGH'}
+        return {'PASS_THROUGH'}   
+
+    def calibration_value(self, value, _max, _min):
+        if value > _max:
+            return _max
+        elif value < _min:
+            return _min
+        else:
+            return value
     
+    def calibration_location(self, keypoint_coords):
+        x = (self.original_leftShoulder[0] + self.original_rightShoulder[0]) / 2 - (keypoint_coords[0][5][0] + keypoint_coords[0][6][0]) / 2
+        y = (self.original_leftShoulder[1] + self.original_rightShoulder[1]) / 2 - (keypoint_coords[0][5][1] + keypoint_coords[0][6][1]) / 2
+        self.original_nose = [self.original_nose[0] - x, self.original_nose[1] - y]
+        self.original_leftEye = [self.original_leftEye[0] - x, self.original_leftEye[1] - y]
+        self.original_rightEye = [self.original_rightEye[0] - x, self.original_rightEye[1] - y]
+        self.original_leftEar = [self.original_leftEar[0] - x, self.original_leftEar[1] - y]
+        self.original_rightEar = [self.original_rightEar[0] - x, self.original_rightEar[1] - y]
+        self.original_leftShoulder = [self.original_leftShoulder[0] - x, self.original_leftShoulder[1] - y]
+        self.original_rightShoulder = [self.original_rightShoulder[0] - x, self.original_rightShoulder[1] - y]
+        self.original_leftElbow = [self.original_leftElbow[0] - x, self.original_leftElbow[1] - y]
+        self.original_rightElbow = [self.original_rightElbow[0] - x, self.original_rightElbow[1] - y]
+        self.original_leftWrist = [self.original_leftWrist[0] - x, self.original_leftWrist[1] - y]
+        self.original_rightWrist = [self.original_rightWrist[0] - x, self.original_rightWrist[1] - y]
+        self.original_leftHip = [self.original_leftHip[0] - x, self.original_leftHip[1] - y]
+        self.original_rightHip = [self.original_rightHip[0] - x, self.original_rightHip[1] - y]
+        self.original_leftKnee = [self.original_leftKnee[0] - x, self.original_leftKnee[1] - y]
+        self.original_rightKnee = [self.original_rightKnee[0] - x, self.original_rightKnee[1] - y]
+        self.original_leftAnkle = [self.original_leftAnkle[0] - x, self.original_leftAnkle[1] - y]
+        self.original_rightAnkle = [self.original_rightAnkle[0] - x, self.original_rightAnkle[1] - y]
+        self.proportion = self.object_shoulder_width / math.sqrt(math.pow(self.original_leftShoulder[0] - self.original_rightShoulder[0], 2) + math.pow(self.original_leftShoulder[1] - self.original_rightShoulder[1], 2))
+        return x, y
+
     def init_session(self):
         if self.sess == None:
             self.sess = tf.InteractiveSession()
