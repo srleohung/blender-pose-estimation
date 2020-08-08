@@ -1,6 +1,5 @@
 import bpy
 from imutils import face_utils
-import dlib
 import cv2
 import time
 import numpy
@@ -38,7 +37,7 @@ class PoseEstimationOperator(bpy.types.Operator):
 
     # initialization calibrator
     proportion = None
-    object_shoulder_width = 0.95 # 1.9
+    object_shoulder_width = 2.3 # 2.3
     calibration_times = 10
     calibration_count = 0
     original_nose = None
@@ -120,12 +119,12 @@ class PoseEstimationOperator(bpy.types.Operator):
                 # bones["root"].location[2] = y*self.proportion
                 # bones["root"].location[0] = x*self.proportion
 
-                # Move nose
+                # Rotate nose
                 nose = keypoint_coords[0][0]
                 nose = [(self.original_nose[0] - nose[0])*self.proportion, (self.original_nose[1] - nose[1])*self.proportion]
                 bones["head"].rotation_mode = 'XYZ'
-                bones["head"].rotation_euler[0] = self.calibration_value(nose[0] * -1, 1, -1)
-                bones["head"].rotation_euler[1] = self.calibration_value(nose[1], 1, -1)
+                bones["head"].rotation_euler[0] = self.smooth_value("head.x", 3, self.calibration_value(nose[0] * -1, 1, -1))
+                bones["head"].rotation_euler[1] = self.smooth_value("head.y", 3, self.calibration_value(nose[1], 1, -1))
                 
                 # Move eyes
                 leftEye = keypoint_coords[0][1]
@@ -147,45 +146,86 @@ class PoseEstimationOperator(bpy.types.Operator):
 
                 rightShoulder = keypoint_coords[0][6]
                 rightShoulder = [(self.original_rightShoulder[0] - rightShoulder[0])*self.proportion, (self.original_rightShoulder[1] - rightShoulder[1])*self.proportion]
-                # bones["chest"].location[2] = (leftShoulder[0] + rightShoulder[0]) / 2
-                # bones["chest"].location[0] = (leftShoulder[1] + rightShoulder[1]) / 2
 
                 # Move elbows
                 leftElbow = keypoint_coords[0][7]
-                leftElbow = [(self.original_leftElbow[0] - leftElbow[0])*self.proportion, (self.original_leftElbow[1] - leftElbow[1])*self.proportion]
-                # bones["forearm_tweak.L"].location[2] = self.calibration_value(leftElbow[0], 1, -1) 
-                # bones["forearm_tweak.L"].location[1] = self.calibration_value(leftElbow[1] * -1, 1, -1) 
+                leftElbow = [(self.original_leftElbow[0] - leftElbow[0])*self.proportion, (self.original_leftElbow[1] - leftElbow[1])*self.proportion*-1]
+                x_x = 0.219534
+                x_y = 0.650383
+                x_z = 0.72719
+                z_x = 0.17474
+                z_y = -0.759534
+                z_z = 0.626558
+                bones["forearm_tweak.L"].location[0] = self.smooth_value("forearm_tweak.L.x", 2, leftElbow[1] * x_x + leftElbow[0] * z_x)
+                bones["forearm_tweak.L"].location[1] = self.smooth_value("forearm_tweak.L.y", 2, leftElbow[1] * x_y + leftElbow[0] * z_y)
+                bones["forearm_tweak.L"].location[2] = self.smooth_value("forearm_tweak.L.z", 2, leftElbow[1] * x_z + leftElbow[0] * z_z)
+                # bones["forearm_tweak.L"].location[2] = self.smooth_value("forearm_tweak.L.y", 3, leftElbow[1])
+                # bones["forearm_tweak.L"].location[0] = self.smooth_value("forearm_tweak.L.x", 3, leftElbow[0])
 
                 rightElbow = keypoint_coords[0][8]
-                rightElbow = [(self.original_rightElbow[0] - rightElbow[0])*self.proportion, (self.original_rightElbow[1] - rightElbow[1])*self.proportion]
-                # bones["forearm_tweak.R"].location[2] = self.calibration_value(rightElbow[0], 1, -1) 
-                # bones["forearm_tweak.R"].location[1] = self.calibration_value(rightElbow[1], 1, -1) 
+                rightElbow = [(self.original_rightElbow[0] - rightElbow[0])*self.proportion, (self.original_rightElbow[1] - rightElbow[1])*self.proportion*-1]
+                x_x = 0.219243
+                x_y = -0.650383
+                x_z = -0.727278
+                z_x = -0.174489
+                z_y = -0.759534
+                z_z = 0.626628
+                bones["forearm_tweak.R"].location[0] = self.smooth_value("forearm_tweak.R.x", 2, rightElbow[1] * x_x + rightElbow[0] * z_x)
+                bones["forearm_tweak.R"].location[1] = self.smooth_value("forearm_tweak.R.y", 2, rightElbow[1] * x_y + rightElbow[0] * z_y)
+                bones["forearm_tweak.R"].location[2] = self.smooth_value("forearm_tweak.R.z", 2, rightElbow[1] * x_z + rightElbow[0] * z_z)
+                # bones["forearm_tweak.R"].location[2] = self.smooth_value("forearm_tweak.R.y", 3, rightElbow[1])
+                # bones["forearm_tweak.R"].location[0] = self.smooth_value("forearm_tweak.R.x", 3, rightElbow[0])
 
                 # Move wrists
                 leftWrist = keypoint_coords[0][9]
-                leftWrist = [(self.original_leftWrist[0] - leftWrist[0])*self.proportion, (self.original_leftWrist[1] - leftWrist[1])*self.proportion]
-                bones["hand_ik.L"].location[2] = leftWrist[0]
-                bones["hand_ik.L"].location[1] = leftWrist[1] * -1
-                
+                leftWrist = [(self.original_leftWrist[0] - leftWrist[0])*self.proportion, (self.original_leftWrist[1] - leftWrist[1])*self.proportion*-1]
+                print(leftWrist)
+                x_x = 0.222131
+                x_y = 0.667043
+                x_z = 0.711134
+                z_x = 0.171844
+                z_y = -0.744722
+                z_z = 0.644871
+                bones["hand_ik.L"].location[0] = self.smooth_value("hand_ik.L.x", 3, leftWrist[1] * x_x + leftWrist[0] * z_x)
+                bones["hand_ik.L"].location[1] = self.smooth_value("hand_ik.L.y", 3, leftWrist[1] * x_y + leftWrist[0] * z_y)
+                bones["hand_ik.L"].location[2] = self.smooth_value("hand_ik.L.z", 3, leftWrist[1] * x_z + leftWrist[0] * z_z)
+                # bones["hand_ik.L"].location[2] = self.smooth_value("hand_ik.L.y", 3, leftWrist[1])
+                # bones["hand_ik.L"].location[0] = self.smooth_value("hand_ik.L.x", 3, leftWrist[0])
+
                 rightWrist = keypoint_coords[0][10]
-                rightWrist = [(self.original_rightWrist[0] - rightWrist[0])*self.proportion, (self.original_rightWrist[1] - rightWrist[1])*self.proportion]
-                bones["hand_ik.R"].location[2] = rightWrist[0]
-                bones["hand_ik.R"].location[1] = rightWrist[1]
+                rightWrist = [(self.original_rightWrist[0] - rightWrist[0])*self.proportion, (self.original_rightWrist[1] - rightWrist[1])*self.proportion*-1]
+                x_x = 0.118835
+                x_y = -0.801089
+                x_z = -0.586629
+                z_x = -0.251902
+                z_y = -0.59581
+                z_z = 0.762598
+                bones["hand_ik.R"].location[0] = self.smooth_value("hand_ik.R.x", 3, rightWrist[1] * x_x + rightWrist[0] * z_x)
+                bones["hand_ik.R"].location[1] = self.smooth_value("hand_ik.R.y", 3, rightWrist[1] * x_y + rightWrist[0] * z_y)
+                bones["hand_ik.R"].location[2] = self.smooth_value("hand_ik.R.z", 3, rightWrist[1] * x_z + rightWrist[0] * z_z)
+                # bones["hand_ik.R"].location[2] = self.smooth_value("hand_ik.R.y", 3, rightWrist[1])
+                # bones["hand_ik.R"].location[0] = self.smooth_value("hand_ik.R.x", 3, rightWrist[0])
+
+                # Rotate hand
+                bones["hand_ik.L"].rotation_mode = 'XYZ'
+                bones["hand_ik.L"].rotation_euler[0] = self.smooth_value("hand_ik.L.r", 3, math.tan((keypoint_coords[0][7][0] - keypoint_coords[0][9][0]) / math.sqrt(math.pow(keypoint_coords[0][7][0] - keypoint_coords[0][9][0], 2) + math.pow(keypoint_coords[0][7][1] - keypoint_coords[0][9][1], 2)))) + 1.2
+                bones["hand_ik.R"].rotation_mode = 'XYZ'
+                bones["hand_ik.R"].rotation_euler[0] = self.smooth_value("hand_ik.R.r", 3, math.tan((keypoint_coords[0][8][0] - keypoint_coords[0][10][0]) / math.sqrt(math.pow(keypoint_coords[0][8][0] - keypoint_coords[0][10][0], 2) + math.pow(keypoint_coords[0][8][1] - keypoint_coords[0][10][1], 2)))) + 1.2
                 
                 # Move hips
                 leftHip = keypoint_coords[0][11]
                 leftHip = [(self.original_leftHip[0] - leftHip[0])*self.proportion, (self.original_leftHip[1] - leftHip[1])*self.proportion]
-                
+
                 rightHip = keypoint_coords[0][12]
                 rightHip = [(self.original_rightHip[0] - rightHip[0])*self.proportion, (self.original_rightHip[1] - rightHip[1])*self.proportion]
-                bones["torso"].location[2] = (leftHip[0] + rightHip[0]) / 2
-                bones["torso"].location[0] = (leftHip[1] + rightHip[1]) / 2
+                bones["torso"].location[2] = self.smooth_value("torso.y", 2, (leftHip[1] + rightHip[1]) / 2)
+                bones["torso"].location[0] = self.smooth_value("torso.x", 2, (leftHip[0] + rightHip[0]) / 2)
 
                 # Move knees
                 leftKnee = keypoint_coords[0][13]
                 leftKnee = [(self.original_leftKnee[0] - leftKnee[0])*self.proportion, (self.original_leftKnee[1] - leftKnee[1])*self.proportion]
-                # bones["shin_tweak.L"].location[2] = leftKnee[0]
-                # bones["shin_tweak.L"].location[1] = leftKnee[1] * -1
+                # bones["shin_tweak.L"].location[2] = self.smooth_value("torso.y", 2, leftKnee[1])
+                # bones["shin_tweak.L"].location[0] = self.smooth_value("torso.x", 2, leftKnee[0])
 
                 rightKnee = keypoint_coords[0][14]
                 rightKnee = [(self.original_rightKnee[0] - rightKnee[0])*self.proportion, (self.original_rightKnee[1] - rightKnee[1])*self.proportion]
@@ -195,13 +235,13 @@ class PoseEstimationOperator(bpy.types.Operator):
                 # Move ankles
                 leftAnkle = keypoint_coords[0][15]
                 leftAnkle = [(self.original_leftAnkle[0] - leftAnkle[0])*self.proportion, (self.original_leftAnkle[1] - leftAnkle[1])*self.proportion]
-                bones["foot_ik.L"].location[2] = leftAnkle[0]
-                bones["foot_ik.L"].location[0] = leftAnkle[1]
+                bones["foot_ik.L"].location[2] = self.smooth_value("foot_ik.L.y", 2, leftAnkle[1])
+                bones["foot_ik.L"].location[0] = self.smooth_value("foot_ik.L.x", 2, leftAnkle[0])
 
                 rightAnkle = keypoint_coords[0][16]
                 rightAnkle = [(self.original_rightAnkle[0] - rightAnkle[0])*self.proportion, (self.original_rightAnkle[1] - rightAnkle[1])*self.proportion]
-                bones["foot_ik.R"].location[2] = rightAnkle[0]
-                bones["foot_ik.R"].location[0] = rightAnkle[1]
+                bones["foot_ik.R"].location[2] = self.smooth_value("foot_ik.R.y", 2, rightAnkle[1])
+                bones["foot_ik.R"].location[0] = self.smooth_value("foot_ik.R.x", 2, rightAnkle[0])
 
                 if self.keyframe_insert_enable == True:
                     # rotation_euler
@@ -254,6 +294,20 @@ class PoseEstimationOperator(bpy.types.Operator):
         self.original_rightAnkle = [self.original_rightAnkle[0] - x, self.original_rightAnkle[1] - y]
         self.proportion = self.object_shoulder_width / math.sqrt(math.pow(self.original_leftShoulder[0] - self.original_rightShoulder[0], 2) + math.pow(self.original_leftShoulder[1] - self.original_rightShoulder[1], 2))
         return x, y
+
+    def smooth_value(self, name, length, value):
+        if not hasattr(self, 'smooth'):
+            self.smooth = {}
+        if not name in self.smooth:
+            self.smooth[name] = numpy.array([value])
+        else:
+            self.smooth[name] = numpy.insert(arr=self.smooth[name], obj=0, values=value)
+            if self.smooth[name].size > length:
+                self.smooth[name] = numpy.delete(self.smooth[name], self.smooth[name].size-1, 0)
+        sum = 0
+        for val in self.smooth[name]:
+            sum += val
+        return sum / self.smooth[name].size
 
     def init_session(self):
         if self.sess == None:
