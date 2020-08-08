@@ -19,8 +19,8 @@ class PoseEstimationOperator(bpy.types.Operator):
     bl_label = "Pose Estimation Operator"  
     _timer = None
     _cap  = None 
-    _id = "/Users/leohung/Downloads/testing.mp4"
-    # _id = 0
+    # _id = "/Users/leohung/Downloads/testing.mp4"
+    _id = 0
     width = 800
     height = 600
     stop :bpy.props.BoolProperty()
