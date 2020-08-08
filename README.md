@@ -1,5 +1,6 @@
 # blender-pose-estimation
-Real-time camera capture pose estimation in Blender.
+Real-time camera capture pose estimation in Blender. Use TensorFlow Posenet for real-time capture and real-time update of Blender 3D model poses to easily complete animation.
+
 
 # Install
 ## MacOS
@@ -52,6 +53,10 @@ https://github.com/srleohung/allinone/blob/master/blender/notes.md
 
 ![HowToUse](./HowToUse.jpg "HowToUse")
 
+# Find Collaborator
+I would like to find collaborators to join to complete this project. I am not good at calculating 3D coordinates and angles. So, I would like to find collaborators who can discuss and learn from each other.
+- Email: srleohung@gmail.com
+
 # References
-- [cv-tricks.com](https://github.com/legolas123/cv-tricks.com)
+- [posenet-python](https://github.com/rwightman/posenet-python)
 - [FacialMotionCapture](https://github.com/jkirsons/FacialMotionCapture)
