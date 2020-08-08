@@ -57,9 +57,21 @@ https://github.com/srleohung/allinone/blob/master/blender/notes.md
 
 # Find Collaborator
 I would like to find collaborators to join to complete this project. I am not good at calculating 3D coordinates and angles. So, I would like to find collaborators who can discuss and learn from each other.
+
 - Email: srleohung@gmail.com
+
 - About me: https://leohung.herokuapp.com/
+
+# Version Issue
+- 3D model flutter
+
+- Calculate 3D coordinates and angles error
+
+
+# Possible Future Work
+- Second camera captures the position of human movement
 
 # References
 - [posenet-python](https://github.com/rwightman/posenet-python)
+
 - [FacialMotionCapture](https://github.com/jkirsons/FacialMotionCapture)
