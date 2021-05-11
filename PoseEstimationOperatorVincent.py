@@ -21,7 +21,7 @@ class PoseEstimationOperator(bpy.types.Operator):
     bl_label = "Pose Estimation Operator"  
     _timer = None
     _cap  = None 
-    _id = 0
+    _id = "/Users/leo/blender-pose-estimation/testing.mp4"
     width = 800
     height = 600
     stop :bpy.props.BoolProperty()
@@ -44,6 +44,8 @@ class PoseEstimationOperator(bpy.types.Operator):
         if event.type == 'TIMER':
             self.init_session()
             self.init_camera()
+            _, image = self._cap.read()
+            cv2.imshow('posenet', image)
             input_image, display_image, output_scale = posenet.read_cap(
                 self._cap, scale_factor=self.scale_factor, output_stride=self.output_stride)
 
@@ -69,12 +71,31 @@ class PoseEstimationOperator(bpy.types.Operator):
 
             bones = bpy.data.objects["RIG-Vincent"].pose.bones
             pose = self.get_pose(keypoint_coords)
+            
+            if pose["nose"][0] == 0 and pose["nose"][1] == 0:
+                return {'PASS_THROUGH'}  
+            
+            if not hasattr(self, 'first_pose'):
+                    self.first_pose = pose
+                    
             ##### ##### ##### ##### #####
-
+            bones["head_fk"].rotation_euler[0] = self.smooth_value("head_fk", 3, (pose["nose"][1] - self.first_pose["nose"][1])) / 100   # Up/Down
+            
+            bones["shoulder_L"].location[0] = self.smooth_value("shoulder_L", 3, (pose["leftShoulder"][1] - self.first_pose["leftShoulder"][1])) / 1000 
+            bones["shoulder_L"].location[1] = self.smooth_value("shoulder_L", 3, (pose["leftShoulder"][0] - self.first_pose["leftShoulder"][0])) / 1000   
+            
+            bones["shoulder_R"].location[0] = self.smooth_value("shoulder_R", 3, (pose["rightShoulder"][1] - self.first_pose["rightShoulder"][1])) / 1000  
+            bones["shoulder_R"].location[1] = self.smooth_value("shoulder_R", 3, (pose["rightShoulder"][0] - self.first_pose["rightShoulder"][0])) / 1000  
+            
+            bones["hand_ik_ctrl_L"].location[2] = self.smooth_value("hand_ik_ctrl_L", 3, (pose["leftWrist"][1] - self.first_pose["leftWrist"][1])) / 1000  
+            bones["hand_ik_ctrl_R"].location[2] = self.smooth_value("hand_ik_ctrl_R", 3, (pose["rightWrist"][1] - self.first_pose["rightWrist"][1])) / 1000  
+            
+            bones["sole_ctrl_L"].location[2] = self.smooth_value("sole_ctrl_L", 3, (pose["leftAnkle"][1] - self.first_pose["leftAnkle"][1])) / 1000  
+            bones["sole_ctrl_R"].location[2] = self.smooth_value("sole_ctrl_R", 3, (pose["rightAnkle"][1] - self.first_pose["rightAnkle"][1])) / 1000              
             ##### ##### ##### ##### #####
 
             cv2.imshow('posenet', overlay_image)
-            cv2.waitKey(100)
+            cv2.waitKey(1)
 
         return {'PASS_THROUGH'}   
     
