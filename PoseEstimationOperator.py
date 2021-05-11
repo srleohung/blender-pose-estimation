@@ -10,7 +10,9 @@ import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 # posenet
 import sys
-sys.path.append('/Users/leohung/blender-pose-estimation')
+sys.path.append('/Users/leo/.local/lib/python3.7/site-packages')
+
+sys.path.append('/Users/leo/blender-pose-estimation')
 import posenet
     
 class PoseEstimationOperator(bpy.types.Operator):

@@ -55,12 +55,21 @@ https://github.com/srleohung/allinone/blob/master/blender/notes.md
 
 ![HowToUse](./HowToUse.jpg "HowToUse")
 
-# Find Collaborator
-I would like to find collaborators to join to complete this project. I am not good at calculating 3D coordinates and angles. So, I would like to find collaborators who can discuss and learn from each other.
-
-- Email: srleohung@gmail.com
-
-- About me: https://leohung.herokuapp.com/
+# Issue
+- ModuleNotFoundError
+```python
+sys.path.append('/Users/leo/.local/lib/python3.7/site-packages')
+```
+- SSL: CERTIFICATE_VERIFY_FAILED
+```python
+import ssl 
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
+```
 
 # Version Issue
 - 3D model movement jitter
